@@ -130,8 +130,8 @@ void setup() {
   xTaskCreate(TaskSonicSensor, "SonicSensorTask", 2048, NULL, 1, NULL);
   xTaskCreate(TaskLEDAlert, "LEDAlertTask", 2048, NULL, 1, NULL);
   xTaskCreate(TaskStopAlertButton, "StopAlertButtonTask", 1024, NULL, 1, NULL);
-  xTaskCreate(TaskComm, "CommTask", 2048, NULL, 2, NULL);
-  xTaskCreate(TaskBLE, "BLETask", 4096, NULL, 2, NULL);
+  xTaskCreate(TaskComm, "CommTask", 2048, NULL, 1, NULL);
+  xTaskCreate(TaskBLE, "BLETask", 4096, NULL, 1, NULL);
 }
 
 void loop() {}
@@ -162,8 +162,8 @@ void TaskSensor(void *pvParameters) {
 // 超音波センサータスク: 2000msごとにデータをキューに送信
 void TaskSonicSensor(void *pvParameters) {
   (void)pvParameters;
-  SonicSensorData sensorValue = 0;
-  SonicSensorData duration = 0;
+  float sensorValue = 0;
+  float duration = 0;
 
   for (;;) {
     digitalWrite(trigPin, LOW);
@@ -173,7 +173,7 @@ void TaskSonicSensor(void *pvParameters) {
     digitalWrite(trigPin, LOW);
 
     duration = pulseIn(echoPin, HIGH);
-    sensorValue = (duration / 2) / 29.1;  // Divide by 29.1 or multiply by 0.0343
+    float sensorValue = (duration / 2) / 29.1;  // Divide by 29.1 or multiply by 0.0343
 
     Serial.print(sensorValue);
     Serial.println("cm");
@@ -192,9 +192,10 @@ void TaskLEDAlert(void *pvParameters) {
   for(;;) {
     if (isDanger) {
       digitalWrite(LEDPIN, HIGH);
-    } else {
+      vTaskDelay(pdMS_TO_TICKS(2000));
+    }else {
       digitalWrite(LEDPIN, LOW);
-      vTaskDelay(pdMS_TO_TICKS(500));
+      vTaskDelay(pdMS_TO_TICKS(2000));
     }
   }
 }
@@ -241,7 +242,7 @@ void TaskBLE(void *pvParameters) {
 void TaskComm(void *pvParameters) {
   (void)pvParameters;
   SensorData receivedData;
-  SonicSensorData receivedSonicData;
+  float receivedSonicData;
 
 
   for (;;) {
@@ -250,8 +251,6 @@ void TaskComm(void *pvParameters) {
       Serial.print(receivedData.temperature);
       Serial.print(", Hum=");
       Serial.println(receivedData.humidity);
-      Serial.print("cm =");
-      Serial.println(receivedSonicData);
       
 
       if(receivedData.temperature > 28 && receivedSonicData <= 50 && !(isDanger)) {
@@ -261,6 +260,6 @@ void TaskComm(void *pvParameters) {
       // データが届かなかった場合のタイムアウト処理
       Serial.println("TaskComm: データを待っています...");
     }
-    vTaskDelay(pdMS_TO_TICKS(300));
+    vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }
